@@ -6,6 +6,11 @@ from enum import Enum
 GRID_ROWS = 5
 GRID_COLS = 9
 INITIAL_SUN = 150
+SUN_VALUE = 25
+SKY_SUN_FALL_SPEED = 80
+SUN_LIFETIME = 8.0
+SUN_CLICK_RADIUS = 28
+SUNFLOWER_INTERVAL = 7.0
 
 
 class PlantType(str, Enum):

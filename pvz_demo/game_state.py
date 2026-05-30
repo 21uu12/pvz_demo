@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from pvz_demo.models import Plant
+from pvz_demo.models import Plant, Sun
 from pvz_demo.settings import GRID_COLS, GRID_ROWS, INITIAL_SUN, PlantType
 
 
@@ -13,6 +13,7 @@ class GameState:
     rows: int = GRID_ROWS
     cols: int = GRID_COLS
     plants: Dict[Tuple[int, int], Plant] = field(default_factory=dict)
+    suns: List[Sun] = field(default_factory=list)
     selected_plant: Optional[PlantType] = None
     is_game_over: bool = False
 
