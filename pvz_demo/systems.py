@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pvz_demo.game_state import GameState
 from pvz_demo.models import Pea, Plant, Sun, Zombie
 from pvz_demo.settings import (
+    GAME_OVER_X,
     HIT_DISTANCE,
     PLANT_COSTS,
     PEA_DAMAGE,
@@ -176,3 +177,9 @@ def update_combat(state: GameState, dt: float) -> None:
     update_zombies(state, dt)
     update_peas(state, dt)
     resolve_pea_hits(state)
+    update_game_over(state)
+
+
+def update_game_over(state: GameState) -> None:
+    if any(zombie.x <= GAME_OVER_X for zombie in state.zombies):
+        state.is_game_over = True

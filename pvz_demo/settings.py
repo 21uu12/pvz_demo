@@ -17,6 +17,7 @@ PEA_DAMAGE = 20
 ZOMBIE_HEALTH = 100
 ZOMBIE_SPEED = 12
 HIT_DISTANCE = 18
+GAME_OVER_X = 0
 
 
 class PlantType(str, Enum):
