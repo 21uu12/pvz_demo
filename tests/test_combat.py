@@ -3,9 +3,11 @@ from pvz_demo.settings import (
     PEA_DAMAGE,
     PEASHOOTER_COOLDOWN,
     PlantType,
+    ZOMBIE_DAMAGE_PER_SECOND,
     ZOMBIE_HEALTH,
 )
 from pvz_demo.systems import (
+    find_plant_for_zombie_to_eat,
     has_zombie_ahead,
     plant_at,
     resolve_pea_hits,
@@ -75,6 +77,53 @@ def test_zombie_moves_left():
     update_zombies(state, dt=1.0)
 
     assert zombie.x < 8
+
+
+def test_zombie_stops_and_damages_plant_when_it_reaches_plant():
+    state = GameState()
+    plant_at(state, PlantType.SUNFLOWER, row=2, col=3)
+    zombie = spawn_zombie(state, row=2, x=3.2)
+    original_x = zombie.x
+
+    update_zombies(state, dt=1.0)
+
+    assert zombie.x == original_x
+    assert state.get_plant(2, 3).health == 100 - ZOMBIE_DAMAGE_PER_SECOND
+
+
+def test_zombie_removes_destroyed_plant():
+    state = GameState()
+    plant_at(state, PlantType.SUNFLOWER, row=2, col=3)
+    state.get_plant(2, 3).health = ZOMBIE_DAMAGE_PER_SECOND
+    spawn_zombie(state, row=2, x=3.2)
+
+    update_zombies(state, dt=1.0)
+
+    assert state.get_plant(2, 3) is None
+
+
+def test_zombie_continues_after_plant_is_destroyed():
+    state = GameState()
+    plant_at(state, PlantType.SUNFLOWER, row=2, col=3)
+    state.get_plant(2, 3).health = ZOMBIE_DAMAGE_PER_SECOND
+    zombie = spawn_zombie(state, row=2, x=3.2)
+    update_zombies(state, dt=1.0)
+    x_after_eating = zombie.x
+
+    update_zombies(state, dt=1.0)
+
+    assert zombie.x < x_after_eating
+
+
+def test_zombie_eats_nearest_reached_plant_in_same_row():
+    state = GameState()
+    plant_at(state, PlantType.SUNFLOWER, row=2, col=2)
+    plant_at(state, PlantType.PEASHOOTER, row=2, col=3)
+    zombie = spawn_zombie(state, row=2, x=3.2)
+
+    target = find_plant_for_zombie_to_eat(state, zombie)
+
+    assert target == state.get_plant(2, 3)
 
 
 def test_pea_hit_damages_zombie_and_removes_pea():

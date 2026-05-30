@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 from pvz_demo.game_state import GameState
 from pvz_demo.models import Pea, Plant, Sun, Zombie
@@ -17,6 +18,8 @@ from pvz_demo.settings import (
     SUN_VALUE,
     SUNFLOWER_INTERVAL,
     PlantType,
+    ZOMBIE_DAMAGE_PER_SECOND,
+    ZOMBIE_EAT_DISTANCE,
     ZOMBIE_HEALTH,
     ZOMBIE_SPEED,
 )
@@ -145,7 +148,29 @@ def update_peashooters(state: GameState, dt: float) -> None:
 
 def update_zombies(state: GameState, dt: float) -> None:
     for zombie in state.zombies:
+        target = find_plant_for_zombie_to_eat(state, zombie)
+        if target is not None:
+            target.health -= ZOMBIE_DAMAGE_PER_SECOND * dt
+            continue
+
         zombie.x -= zombie.speed * dt
+
+    state.plants = {
+        position: plant
+        for position, plant in state.plants.items()
+        if plant.health > 0
+    }
+
+
+def find_plant_for_zombie_to_eat(state: GameState, zombie: Zombie) -> Optional[Plant]:
+    candidates = [
+        plant
+        for plant in state.plants.values()
+        if plant.row == zombie.row and 0 <= zombie.x - plant.col <= ZOMBIE_EAT_DISTANCE
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda plant: plant.col)
 
 
 def update_peas(state: GameState, dt: float) -> None:
