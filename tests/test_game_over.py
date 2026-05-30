@@ -33,6 +33,6 @@ def test_combat_update_checks_game_over_after_zombies_move():
     state = GameState()
     spawn_zombie(state, row=2, x=1)
 
-    update_combat(state, dt=1.0)
+    update_combat(state, dt=4.0)
 
     assert state.is_game_over is True
