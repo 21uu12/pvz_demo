@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 venv/
 env/
+assets/ui-smoke.png
 
 # Existing unrelated local artifacts in this workspace.
 codex-pet.md

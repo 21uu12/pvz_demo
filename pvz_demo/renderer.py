@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pygame
 
 from pvz_demo.game_state import GameState
@@ -24,6 +26,8 @@ SELECTED = (255, 255, 255)
 GAME_OVER_OVERLAY = (30, 30, 30)
 HEALTH_BG = (55, 55, 55)
 HEALTH_FG = (76, 190, 88)
+ASSET_DIR = Path(__file__).resolve().parent.parent / "assets" / "sprites"
+_SPRITES = None
 
 
 def draw_game(screen: pygame.Surface, state: GameState, layout: Layout, font: pygame.font.Font) -> None:
@@ -33,6 +37,34 @@ def draw_game(screen: pygame.Surface, state: GameState, layout: Layout, font: py
     draw_entities(screen, state, layout, font)
     if state.is_game_over:
         draw_game_over(screen, layout, font)
+
+
+def get_sprites() -> dict:
+    global _SPRITES
+    if _SPRITES is not None:
+        return _SPRITES
+
+    _SPRITES = {}
+    for name in ("sunflower", "peashooter", "zombie", "sun", "pea"):
+        path = ASSET_DIR / "{}.png".format(name)
+        if path.exists():
+            _SPRITES[name] = pygame.image.load(str(path)).convert_alpha()
+    return _SPRITES
+
+
+def blit_fit(
+    screen: pygame.Surface,
+    image: pygame.Surface,
+    center_x: int,
+    center_y: int,
+    max_width: int,
+    max_height: int,
+) -> None:
+    width, height = image.get_size()
+    scale = min(max_width / width, max_height / height)
+    new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
+    scaled = pygame.transform.smoothscale(image, new_size)
+    screen.blit(scaled, (center_x - new_size[0] // 2, center_y - new_size[1] // 2))
 
 
 def draw_toolbar(screen: pygame.Surface, state: GameState, layout: Layout, font: pygame.font.Font) -> None:
@@ -70,13 +102,18 @@ def draw_lawn(screen: pygame.Surface, layout: Layout) -> None:
 
 
 def draw_entities(screen: pygame.Surface, state: GameState, layout: Layout, font: pygame.font.Font) -> None:
+    sprites = get_sprites()
     for plant in state.plants.values():
         x, y = cell_center(layout, plant.row, plant.col)
-        rect = (x - layout.cell_size // 3, y - layout.cell_size // 3, layout.cell_size * 2 // 3, layout.cell_size * 2 // 3)
-        color = SUNFLOWER if plant.plant_type == PlantType.SUNFLOWER else PEASHOOTER
-        pygame.draw.rect(screen, color, rect, border_radius=6)
-        label = "S" if plant.plant_type == PlantType.SUNFLOWER else "P"
-        screen.blit(font.render(label, True, BLACK), (x - 6, y - 10))
+        sprite_name = "sunflower" if plant.plant_type == PlantType.SUNFLOWER else "peashooter"
+        if sprite_name in sprites:
+            blit_fit(screen, sprites[sprite_name], x, y - layout.cell_size // 10, int(layout.cell_size * 0.9), int(layout.cell_size * 0.95))
+        else:
+            rect = (x - layout.cell_size // 3, y - layout.cell_size // 3, layout.cell_size * 2 // 3, layout.cell_size * 2 // 3)
+            color = SUNFLOWER if plant.plant_type == PlantType.SUNFLOWER else PEASHOOTER
+            pygame.draw.rect(screen, color, rect, border_radius=6)
+            label = "S" if plant.plant_type == PlantType.SUNFLOWER else "P"
+            screen.blit(font.render(label, True, BLACK), (x - 6, y - 10))
         draw_health_bar(screen, x - layout.cell_size // 3, y + layout.cell_size // 3 + 4, layout.cell_size * 2 // 3, plant.health / 100)
 
     for sun in state.suns:
@@ -84,16 +121,25 @@ def draw_entities(screen: pygame.Surface, state: GameState, layout: Layout, font
             x, y = cell_center(layout, sun.row, sun.col)
         else:
             x, y = int(sun.x), int(sun.y)
-        pygame.draw.circle(screen, YELLOW, (x, y), max(12, layout.cell_size // 6))
+        if "sun" in sprites:
+            blit_fit(screen, sprites["sun"], x, y, int(layout.cell_size * 0.58), int(layout.cell_size * 0.58))
+        else:
+            pygame.draw.circle(screen, YELLOW, (x, y), max(12, layout.cell_size // 6))
 
     for pea in state.peas:
         x, y = cell_center(layout, pea.row, pea.x)
-        pygame.draw.circle(screen, PEA, (x, y), max(5, layout.cell_size // 12))
+        if "pea" in sprites:
+            blit_fit(screen, sprites["pea"], x, y, int(layout.cell_size * 0.18), int(layout.cell_size * 0.18))
+        else:
+            pygame.draw.circle(screen, PEA, (x, y), max(5, layout.cell_size // 12))
 
     for zombie in state.zombies:
         x, y = cell_center(layout, zombie.row, zombie.x)
-        rect = (x - layout.cell_size // 4, y - layout.cell_size // 3, layout.cell_size // 2, layout.cell_size * 2 // 3)
-        pygame.draw.rect(screen, ZOMBIE, rect, border_radius=4)
+        if "zombie" in sprites:
+            blit_fit(screen, sprites["zombie"], x, y - layout.cell_size // 8, int(layout.cell_size * 0.85), int(layout.cell_size * 1.2))
+        else:
+            rect = (x - layout.cell_size // 4, y - layout.cell_size // 3, layout.cell_size // 2, layout.cell_size * 2 // 3)
+            pygame.draw.rect(screen, ZOMBIE, rect, border_radius=4)
         health = font.render(str(int(zombie.health)), True, WHITE)
         screen.blit(health, (x - 12, y - layout.cell_size // 2))
         draw_health_bar(screen, x - layout.cell_size // 4, y + layout.cell_size // 3 + 4, layout.cell_size // 2, zombie.health / 100)
