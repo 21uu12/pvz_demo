@@ -13,6 +13,7 @@ class Plant:
     col: int
     health: int = 100
     sun_timer: float = 0.0
+    shoot_timer: float = 0.0
 
 
 @dataclass
@@ -31,3 +32,19 @@ class Sun:
         dx = self.x - x
         dy = self.y - y
         return dx * dx + dy * dy <= radius * radius
+
+
+@dataclass
+class Zombie:
+    row: int
+    x: float
+    health: int
+    speed: float
+
+
+@dataclass
+class Pea:
+    row: int
+    x: float
+    damage: int
+    speed: float

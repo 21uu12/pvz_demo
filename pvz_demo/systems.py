@@ -3,15 +3,21 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from pvz_demo.game_state import GameState
-from pvz_demo.models import Plant, Sun
+from pvz_demo.models import Pea, Plant, Sun, Zombie
 from pvz_demo.settings import (
+    HIT_DISTANCE,
     PLANT_COSTS,
+    PEA_DAMAGE,
+    PEA_SPEED,
+    PEASHOOTER_COOLDOWN,
     SKY_SUN_FALL_SPEED,
     SUN_CLICK_RADIUS,
     SUN_LIFETIME,
     SUN_VALUE,
     SUNFLOWER_INTERVAL,
     PlantType,
+    ZOMBIE_HEALTH,
+    ZOMBIE_SPEED,
 )
 
 
@@ -103,3 +109,70 @@ def update_sunflowers(state: GameState, dt: float) -> None:
         if plant.sun_timer >= SUNFLOWER_INTERVAL:
             plant.sun_timer -= SUNFLOWER_INTERVAL
             spawn_sunflower_sun(state, plant.row, plant.col)
+
+
+def spawn_zombie(state: GameState, row: int, x: float) -> Zombie:
+    zombie = Zombie(row=row, x=x, health=ZOMBIE_HEALTH, speed=ZOMBIE_SPEED)
+    state.zombies.append(zombie)
+    return zombie
+
+
+def has_zombie_ahead(state: GameState, row: int, x: float) -> bool:
+    return any(zombie.row == row and zombie.x > x for zombie in state.zombies)
+
+
+def spawn_pea(state: GameState, row: int, x: float) -> Pea:
+    pea = Pea(row=row, x=x, damage=PEA_DAMAGE, speed=PEA_SPEED)
+    state.peas.append(pea)
+    return pea
+
+
+def update_peashooters(state: GameState, dt: float) -> None:
+    for plant in state.plants.values():
+        if plant.plant_type != PlantType.PEASHOOTER:
+            continue
+
+        if not has_zombie_ahead(state, plant.row, plant.col):
+            plant.shoot_timer = 0.0
+            continue
+
+        plant.shoot_timer += dt
+        if plant.shoot_timer >= PEASHOOTER_COOLDOWN:
+            plant.shoot_timer -= PEASHOOTER_COOLDOWN
+            spawn_pea(state, plant.row, float(plant.col))
+
+
+def update_zombies(state: GameState, dt: float) -> None:
+    for zombie in state.zombies:
+        zombie.x -= zombie.speed * dt
+
+
+def update_peas(state: GameState, dt: float) -> None:
+    for pea in state.peas:
+        pea.x += pea.speed * dt
+
+
+def resolve_pea_hits(state: GameState) -> None:
+    active_peas = []
+    for pea in state.peas:
+        hit_zombie = None
+        for zombie in state.zombies:
+            if zombie.row == pea.row and abs(zombie.x - pea.x) <= HIT_DISTANCE:
+                hit_zombie = zombie
+                break
+
+        if hit_zombie is None:
+            active_peas.append(pea)
+            continue
+
+        hit_zombie.health -= pea.damage
+
+    state.peas = active_peas
+    state.zombies = [zombie for zombie in state.zombies if zombie.health > 0]
+
+
+def update_combat(state: GameState, dt: float) -> None:
+    update_peashooters(state, dt)
+    update_zombies(state, dt)
+    update_peas(state, dt)
+    resolve_pea_hits(state)
