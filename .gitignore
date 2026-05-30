@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Existing unrelated local artifacts in this workspace.
+codex-pet.md
+output/
+tools/
